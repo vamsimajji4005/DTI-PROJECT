@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FUTUREHIRE - Skills & Career Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .hidden { display: none; }
+        .fade-in { animation: fadeIn 0.3s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        /* Smooth scrolling for tables */
+        .custom-scrollbar::-webkit-scrollbar { height: 8px; width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        
+        /* Circular Progress for Job Predictor */
+        .circular-chart { display: block; margin: 0 auto; max-width: 80%; max-height: 250px; }
+        .circle-bg { fill: none; stroke: #eee; stroke-width: 2.5; }
+        .circle { fill: none; stroke-width: 2.5; stroke-linecap: round; transition: stroke-dasharray 1s ease-out; }
+        .percentage { fill: #1e293b; font-family: sans-serif; font-weight: bold; font-size: 0.5em; text-anchor: middle; }
+
+        /* Chatbot Styles */
+        .chat-widget { position: fixed; bottom: 20px; right: 20px; z-index: 100; display: flex; flex-direction: column; align-items: flex-end; }
+        .chat-btn { width: 60px; height: 60px; background: #2563eb; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-size: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); cursor: pointer; transition: transform 0.2s; }
+        .chat-btn:hover { transform: scale(1.1); }
+        .chat-window { width: 350px; height: 500px; background: white; border-radius: 15px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); overflow: hidden; display: none; flex-direction: column; margin-bottom: 15px; border: 1px solid #e2e8f0; }
+        .chat-header { background: #1e40af; color: white; padding: 15px; display: flex; justify-content: space-between; align-items: center; }
+        .chat-body { flex: 1; padding: 15px; overflow-y: auto; background: #f8fafc; display: flex; flex-direction: column; gap: 10px; }
+        .chat-footer { padding: 10px; border-top: 1px solid #e2e8f0; display: flex; gap: 5px; background: white; }
+        .chat-input { flex: 1; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 20px; outline: none; font-size: 14px; }
+        .msg { max-width: 80%; padding: 8px 12px; border-radius: 15px; font-size: 14px; line-height: 1.4; }
+        .msg-bot { background: #e0f2fe; color: #0f172a; align-self: flex-start; border-bottom-left-radius: 2px; }
+        .msg-user { background: #2563eb; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+        .suggestion-chip { background: #f1f5f9; border: 1px solid #cbd5e1; padding: 5px 10px; border-radius: 15px; font-size: 12px; cursor: pointer; transition: all 0.2s; display: inline-block; margin: 2px; }
+        .suggestion-chip:hover { background: #e2e8f0; border-color: #94a3b8; }
+        .typing-indicator { font-style: italic; color: #64748b; font-size: 12px; margin-left: 10px; display: none; }
+    </style>
+</head>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col">
+
+    <!-- NAVBAR -->
+    <nav class="bg-blue-800 text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center gap-2 cursor-pointer hover:opacity-90 transition" onclick="navigateTo('dashboard', true)">
+                    <i class="ph-fill ph-rocket-launch text-2xl text-blue-300"></i>
+                    <h1 class="text-2xl font-bold tracking-wide">FUTUREHIRE</h1>
+                </div>
+                <div>
+                    <!-- Auth Section Logic -->
+                    <div id="auth-section">
+                        <button onclick="navigateTo('login-home')" class="bg-white/10 border border-white/20 text-white px-5 py-1.5 rounded-full font-medium hover:bg-white hover:text-blue-800 transition text-sm backdrop-blur-sm">
+                            Sign In | Login
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main id="main-container" class="max-w-7xl mx-auto p-6 flex-grow">
+        
+        <!-- BACK BUTTON -->
+        <div id="back-container" class="hidden mb-6">
+            <button onclick="goBack()" class="flex items-center text-slate-500 hover:text-blue-700 font-medium transition group px-4 py-2 bg-white rounded-lg shadow-sm border border-slate-200">
+                <i class="ph-bold ph-arrow-left mr-2 group-hover:-translate-x-1 transition-transform"></i> 
+                <span>Back</span>
+            </button>
+        </div>
+
+        <!-- ================== AUTHENTICATION MODULES ================== -->
+        
+        <!-- 1. LOGIN PAGE -->
+        <div id="login-home" class="view-section hidden fade-in max-w-md mx-auto mt-10">
+            <div class="bg-white p-8 rounded-2xl shadow-xl border border-slate-100">
+                <div class="text-center mb-8">
+                    <h2 class="text-2xl font-bold text-slate-800">Welcome Back</h2>
+                    <p class="text-slate-500 text-sm mt-1">Login to access your dashboard</p>
+                </div>
+                <form onsubmit="handleLogin(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Email / Username</label>
+                        <input type="text" id="login-email" required class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Password</label>
+                        <input type="password" id="login-pass" required class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div class="flex justify-between items-center text-xs">
+                        <label class="flex items-center text-slate-600"><input type="checkbox" class="mr-2"> Remember me</label>
+                        <span class="text-blue-600 cursor-pointer hover:underline">Forgot Password?</span>
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition">Login</button>
+                </form>
+                <div class="mt-6 text-center text-sm">
+                    <p class="text-slate-500">New to FutureHire? <span onclick="navigateTo('signup-home')" class="text-blue-600 font-bold cursor-pointer hover:underline">Create Account</span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. SIGN UP PAGE -->
+        <div id="signup-home" class="view-section hidden fade-in max-w-3xl mx-auto mt-4">
+            <div class="bg-white p-8 rounded-2xl shadow-xl border border-slate-100">
+                <div class="text-center mb-8">
+                    <h2 class="text-3xl font-bold text-slate-800">Create Your Account</h2>
+                    <p class="text-slate-500 text-sm mt-1">Details will be sent to admin for verification.</p>
+                </div>
+                
+                <form onsubmit="handleSignup(event)" class="space-y-6">
+                    <!-- Section A: Personal -->
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <h3 class="font-bold text-slate-700 mb-3 flex items-center"><i class="ph-fill ph-user mr-2 text-blue-600"></i> Personal Info</h3>
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <div><label class="text-xs font-bold text-slate-500">Full Name</label><input type="text" id="reg-name" required class="w-full p-2 border rounded text-sm"></div>
+                            <div><label class="text-xs font-bold text-slate-500">Mobile</label><input type="tel" id="reg-mobile" required class="w-full p-2 border rounded text-sm"></div>
+                            <div><label class="text-xs font-bold text-slate-500">Email</label><input type="email" id="reg-email" required class="w-full p-2 border rounded text-sm"></div>
+                            <div><label class="text-xs font-bold text-slate-500">Gender</label><select id="reg-gender" class="w-full p-2 border rounded text-sm"><option>Male</option><option>Female</option><option>Other</option></select></div>
+                        </div>
+                    </div>
+
+                    <!-- Section B: Academic (Eligibility Check) -->
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <h3 class="font-bold text-slate-700 mb-3 flex items-center"><i class="ph-fill ph-student mr-2 text-green-600"></i> Academic Details</h3>
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-xs font-bold text-slate-500">Qualification</label>
+                                <select id="reg-qual" class="w-full p-2 border rounded text-sm">
+                                    <option value="btech">B.Tech / B.E</option>
+                                    <option value="diploma">Diploma</option>
+                                    <option value="other">Other (Arts/Commerce/Science)</option>
+                                </select>
+                            </div>
+                            <div><label class="text-xs font-bold text-slate-500">College Name</label><input type="text" id="reg-college" required class="w-full p-2 border rounded text-sm"></div>
+                            <div><label class="text-xs font-bold text-slate-500">Branch</label><input type="text" id="reg-branch" required class="w-full p-2 border rounded text-sm" placeholder="e.g. CSE, ECE"></div>
+                            <div><label class="text-xs font-bold text-slate-500">Current CGPA</label><input type="number" id="reg-cgpa" step="0.1" required class="w-full p-2 border rounded text-sm" placeholder="e.g. 7.5"></div>
+                            <div><label class="text-xs font-bold text-slate-500">Year of Study</label><select id="reg-year" class="w-full p-2 border rounded text-sm"><option>1st Year</option><option>2nd Year</option><option>3rd Year</option><option>4th Year</option><option>Graduated</option></select></div>
+                        </div>
+                    </div>
+
+                    <!-- Section C: Career & Password -->
+                    <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <h3 class="font-bold text-slate-700 mb-3 flex items-center"><i class="ph-fill ph-briefcase mr-2 text-purple-600"></i> Career Interests</h3>
+                        <div class="grid md:grid-cols-2 gap-4 mb-4">
+                            <div><label class="text-xs font-bold text-slate-500">Goal</label><select id="reg-goal" class="w-full p-2 border rounded text-sm"><option>Job</option><option>Higher Studies</option><option>Both</option></select></div>
+                            <div><label class="text-xs font-bold text-slate-500">Target Role</label><input type="text" id="reg-role" class="w-full p-2 border rounded text-sm" placeholder="e.g. SDE"></div>
+                        </div>
+                        <div class="border-t border-slate-200 pt-4">
+                            <label class="text-xs font-bold text-slate-500">Password</label>
+                            <input type="password" id="reg-pass" required class="w-full p-2 border rounded text-sm mb-2" placeholder="Create Password">
+                            <input type="password" id="reg-confirm-pass" required class="w-full p-2 border rounded text-sm" placeholder="Confirm Password">
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <button type="button" onclick="goBack()" class="flex-1 py-3 border border-slate-300 rounded-xl font-bold text-slate-600 hover:bg-slate-50">Cancel</button>
+                        <button type="submit" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 shadow-lg">Register & Send to Admin</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- 3. USER PROFILE VIEW -->
+        <div id="user-profile-view" class="view-section hidden fade-in">
+            <h2 class="text-3xl font-bold mb-6 text-slate-800">My Profile</h2>
+            <div class="bg-white rounded-2xl shadow-md border border-slate-200 overflow-hidden">
+                <div class="bg-gradient-to-r from-blue-600 to-indigo-600 h-32"></div>
+                <div class="px-8 pb-8 relative">
+                    <div class="flex flex-col md:flex-row items-start md:items-end -mt-12 mb-6 gap-6">
+                        <div class="w-24 h-24 bg-white p-1 rounded-full shadow-lg">
+                            <img src="https://ui-avatars.com/api/?name=User&background=random" id="profile-img" class="w-full h-full rounded-full object-cover">
+                        </div>
+                        <div class="flex-1">
+                            <h3 class="text-2xl font-bold text-slate-900" id="profile-name">User Name</h3>
+                            <p class="text-slate-500" id="profile-email">user@example.com</p>
+                        </div>
+                        <button class="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg font-medium text-sm hover:bg-slate-200 border border-slate-300">Edit Profile</button>
+                    </div>
+
+                    <div class="grid md:grid-cols-2 gap-8 border-t border-slate-100 pt-6">
+                        <div>
+                            <h4 class="font-bold text-slate-800 mb-4 flex items-center gap-2"><i class="ph-fill ph-student text-blue-500"></i> Academic Info</h4>
+                            <div class="space-y-3 text-sm">
+                                <div class="flex justify-between border-b border-slate-50 pb-2"><span class="text-slate-500">College</span><span class="font-medium" id="profile-college">Not set</span></div>
+                                <div class="flex justify-between border-b border-slate-50 pb-2"><span class="text-slate-500">Branch</span><span class="font-medium" id="profile-branch">Not set</span></div>
+                                <div class="flex justify-between border-b border-slate-50 pb-2"><span class="text-slate-500">CGPA</span><span class="font-medium" id="profile-cgpa">Not set</span></div>
+                                <div class="flex justify-between"><span class="text-slate-500">Year</span><span class="font-medium" id="profile-year">Not set</span></div>
+                            </div>
+                        </div>
+                        <div>
+                             <h4 class="font-bold text-slate-800 mb-4 flex items-center gap-2"><i class="ph-fill ph-chart-line-up text-green-500"></i> Platform Stats</h4>
+                             <div class="grid grid-cols-2 gap-4">
+                                 <div class="bg-slate-50 p-3 rounded-lg text-center">
+                                     <span class="block text-2xl font-bold text-slate-800">0</span>
+                                     <span class="text-xs text-slate-500">Courses</span>
+                                 </div>
+                                 <div class="bg-slate-50 p-3 rounded-lg text-center">
+                                     <span class="block text-2xl font-bold text-slate-800">0%</span>
+                                     <span class="text-xs text-slate-500">Readiness</span>
+                                 </div>
+                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DASHBOARD -->
+        <div id="dashboard" class="view-section fade-in">
+            <div class="text-center mb-12 mt-8">
+                <h1 class="text-4xl md:text-5xl font-extrabold text-slate-900 mb-4 tracking-tight">
+                    What's Next After <span class="text-blue-600">B.Tech?</span>
+                </h1>
+                <p class="text-lg text-slate-500 max-w-2xl mx-auto">
+                    Your all-in-one platform for off-campus drives, skill roadmaps, and career prediction.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div onclick="navigateTo('companies-home')" class="bg-white p-8 rounded-2xl shadow-sm hover:shadow-xl transition-all cursor-pointer border border-slate-100 group flex flex-col items-center text-center hover:-translate-y-1">
+                    <div class="w-16 h-16 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-4 text-3xl group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                        <i class="ph-fill ph-buildings"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800">Companies</h3>
+                    <p class="text-slate-500 text-sm mt-2">50+ Profiles, Packages & Internships</p>
+                </div>
+
+                <div onclick="navigateTo('skills-home')" class="bg-white p-8 rounded-2xl shadow-sm hover:shadow-xl transition-all cursor-pointer border border-slate-100 group flex flex-col items-center text-center hover:-translate-y-1">
+                    <div class="w-16 h-16 rounded-full bg-green-50 text-green-600 flex items-center justify-center mb-4 text-3xl group-hover:bg-green-600 group-hover:text-white transition-colors">
+                        <i class="ph-fill ph-book-open"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800">Skills</h3>
+                    <p class="text-slate-500 text-sm mt-2">Comm, Technical & Soft Skills</p>
+                </div>
+
+                <div onclick="navigateTo('courses-home')" class="bg-white p-8 rounded-2xl shadow-sm hover:shadow-xl transition-all cursor-pointer border border-slate-100 group flex flex-col items-center text-center hover:-translate-y-1">
+                    <div class="w-16 h-16 rounded-full bg-purple-50 text-purple-600 flex items-center justify-center mb-4 text-3xl group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                        <i class="ph-fill ph-monitor-play"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800">Courses</h3>
+                    <p class="text-slate-500 text-sm mt-2">Certification & Learning</p>
+                </div>
+                
+                <div onclick="navigateTo('higher-studies-home')" class="bg-white p-8 rounded-2xl shadow-sm hover:shadow-xl transition-all cursor-pointer border border-slate-100 group flex flex-col items-center text-center hover:-translate-y-1">
+                    <div class="w-16 h-16 rounded-full bg-yellow-50 text-yellow-600 flex items-center justify-center mb-4 text-3xl group-hover:bg-yellow-600 group-hover:text-white transition-colors">
+                        <i class="ph-fill ph-graduation-cap"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800">Higher Studies</h3>
+                    <p class="text-slate-500 text-sm mt-2">GATE, GRE & Colleges</p>
+                </div>
+
+                <div onclick="navigateTo('prediction')" class="bg-white p-8 rounded-2xl shadow-sm hover:shadow-xl transition-all cursor-pointer border border-slate-100 group flex flex-col items-center text-center hover:-translate-y-1">
+                    <div class="w-16 h-16 rounded-full bg-red-50 text-red-600 flex items-center justify-center mb-4 text-3xl group-hover:bg-red-600 group-hover:text-white transition-colors">
+                        <i class="ph-fill ph-magic-wand"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800">Job Predictor</h3>
+                    <p class="text-slate-500 text-sm mt-2">AI Role & Readiness Analysis</p>
+                </div>
+                
+                <div onclick="navigateTo('mentors-home')" class="bg-white p-8 rounded-2xl shadow-sm hover:shadow-xl transition-all cursor-pointer border border-slate-100 group flex flex-col items-center text-center hover:-translate-y-1">
+                    <div class="w-16 h-16 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center mb-4 text-3xl group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                        <i class="ph-fill ph-users"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-slate-800">Mentors</h3>
+                    <p class="text-slate-500 text-sm mt-2">Connect with Seniors</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================== COMPANIES MODULE ================== -->
+        <div id="companies-home" class="view-section hidden fade-in">
+            <h2 class="text-3xl font-bold mb-8 text-slate-800 border-l-8 border-blue-600 pl-4">Companies Module</h2>
+            <div class="grid md:grid-cols-3 gap-6">
+                <div onclick="navigateTo('comp-list')" class="bg-white p-6 rounded-xl shadow-md cursor-pointer hover:shadow-xl hover:-translate-y-1 transition border-t-4 border-blue-500">
+                    <i class="ph-duotone ph-info text-5xl mb-4 text-blue-600"></i>
+                    <h3 class="text-xl font-bold mb-2">1. Company Directory</h3>
+                    <p class="text-slate-500 text-sm">Detailed profiles of 50+ top recruiters.</p>
+                </div>
+                <div onclick="navigateTo('comp-packages')" class="bg-white p-6 rounded-xl shadow-md cursor-pointer hover:shadow-xl hover:-translate-y-1 transition border-t-4 border-emerald-500">
+                    <i class="ph-duotone ph-currency-inr text-5xl mb-4 text-emerald-600"></i>
+                    <h3 class="text-xl font-bold mb-2">2. Fresher Packages</h3>
+                    <p class="text-slate-500 text-sm">Compare CTC, bonds, and growth.</p>
+                </div>
+                <div onclick="navigateTo('comp-internships')" class="bg-white p-6 rounded-xl shadow-md cursor-pointer hover:shadow-xl hover:-translate-y-1 transition border-t-4 border-purple-500">
+                    <i class="ph-duotone ph-laptop text-5xl mb-4 text-purple-600"></i>
+                    <h3 class="text-xl font-bold mb-2">3. Internship Hub</h3>
+                    <p class="text-slate-500 text-sm">Apply to active internships.</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="comp-list" class="view-section hidden fade-in">
+            <h2 class="text-2xl font-bold mb-6">🏢 Company Directory (50+ Listed)</h2>
+            <div id="company-grid-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+        </div>
+        <div id="comp-detail-view" class="view-section hidden fade-in">
+            <div id="company-detail-content" class="bg-white p-8 rounded-2xl shadow-lg border border-slate-100"></div>
+        </div>
+        <div id="comp-packages" class="view-section hidden fade-in">
+             <h2 class="text-2xl font-bold mb-6 text-slate-800 flex items-center gap-2"><i class="ph-fill ph-money text-emerald-600"></i> Fresher Salary Packages</h2>
+             <div class="overflow-x-auto custom-scrollbar bg-white rounded-xl shadow-sm border border-slate-200">
+                <table class="min-w-full text-left text-sm"><thead class="bg-slate-50"><tr><th class="px-6 py-4">Company</th><th class="px-6 py-4">Role</th><th class="px-6 py-4">CTC</th><th class="px-6 py-4">Bond</th></tr></thead><tbody id="package-table-body" class="divide-y divide-slate-100"></tbody></table>
+            </div>
+        </div>
+        <div id="comp-internships" class="view-section hidden fade-in">
+             <h2 class="text-2xl font-bold mb-6 text-slate-800 flex items-center gap-2"><i class="ph-fill ph-rocket-launch text-violet-600"></i> Active Internships</h2>
+             <div id="internship-container" class="grid md:grid-cols-2 gap-6"></div>
+        </div>
+
+        <!-- ================== SKILLS MAIN MENU (LEVEL 2) ================== -->
+        <div id="skills-home" class="view-section hidden fade-in">
+            <h2 class="text-3xl font-bold mb-8 text-slate-800 border-l-8 border-green-600 pl-4">Skills Development</h2>
+            <p class="mb-6 text-slate-600">Master the skills you need to get hired. Choose a module below:</p>
+
+            <div class="grid md:grid-cols-3 gap-6">
+                <div onclick="navigateTo('skill-comm-menu')" class="bg-white p-6 rounded-xl shadow-md cursor-pointer hover:shadow-xl hover:-translate-y-1 transition border-t-4 border-orange-500 group">
+                    <div class="flex justify-between items-start mb-4">
+                        <i class="ph-duotone ph-chat-circle-text text-5xl text-orange-500"></i>
+                        <span class="bg-orange-100 text-orange-700 text-xs font-bold px-2 py-1 rounded">Fluency</span>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2 group-hover:text-orange-600 transition">Communication Skills</h3>
+                    <p class="text-slate-500 text-sm">Spoken English, Interview Answers, and Grammar Analysis.</p>
+                </div>
+
+                <div onclick="navigateTo('skill-tech-menu')" class="bg-white p-6 rounded-xl shadow-md cursor-pointer hover:shadow-xl hover:-translate-y-1 transition border-t-4 border-blue-500 group">
+                    <div class="flex justify-between items-start mb-4">
+                        <i class="ph-duotone ph-code text-5xl text-blue-500"></i>
+                        <span class="bg-blue-100 text-blue-700 text-xs font-bold px-2 py-1 rounded">Coding</span>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2 group-hover:text-blue-600 transition">Technical Skills</h3>
+                    <p class="text-slate-500 text-sm">Java, Python, Web Dev, and Competitive Coding Tests.</p>
+                </div>
+
+                <div onclick="navigateTo('skill-soft-menu')" class="bg-white p-6 rounded-xl shadow-md cursor-pointer hover:shadow-xl hover:-translate-y-1 transition border-t-4 border-pink-500 group">
+                    <div class="flex justify-between items-start mb-4">
+                        <i class="ph-duotone ph-handshake text-5xl text-pink-500"></i>
+                        <span class="bg-pink-100 text-pink-700 text-xs font-bold px-2 py-1 rounded">Behavior</span>
+                    </div>
+                    <h3 class="text-xl font-bold mb-2 group-hover:text-pink-600 transition">Soft Skills</h3>
+                    <p class="text-slate-500 text-sm">Professionalism, Body Language, and HR Mock Interviews.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================== 1. COMMUNICATION SECTION ================== -->
+        <div id="skill-comm-menu" class="view-section hidden fade-in">
+            <h2 class="text-2xl font-bold mb-6 text-slate-800 flex items-center gap-2">
+                <i class="ph-fill ph-chat-circle-text text-orange-500"></i> Communication Tools
+            </h2>
+            <div class="grid md:grid-cols-3 gap-6">
+                <div onclick="navigateTo('comm-learning')" class="bg-white p-8 rounded-xl shadow-sm hover:shadow-lg cursor-pointer border border-slate-100 text-center hover:border-orange-400 transition">
+                    <i class="ph-duotone ph-video text-5xl text-orange-500 mb-4"></i>
+                    <h3 class="font-bold text-lg text-slate-800">Learning Videos</h3>
+                    <p class="text-sm text-slate-500 mt-2">Tutorials & Guides</p>
+                </div>
+                <div onclick="navigateTo('comm-ai')" class="bg-white p-8 rounded-xl shadow-sm hover:shadow-lg cursor-pointer border border-slate-100 text-center hover:border-orange-400 transition">
+                    <i class="ph-duotone ph-robot text-5xl text-orange-500 mb-4"></i>
+                    <h3 class="font-bold text-lg text-slate-800">AI Grammar Coach</h3>
+                    <p class="text-sm text-slate-500 mt-2">Check Sentence Quality</p>
+                </div>
+                <div onclick="navigateTo('comm-mock')" class="bg-white p-8 rounded-xl shadow-sm hover:shadow-lg cursor-pointer border border-slate-100 text-center hover:border-orange-400 transition">
+                    <i class="ph-duotone ph-calendar-check text-5xl text-orange-500 mb-4"></i>
+                    <h3 class="font-bold text-lg text-slate-800">Mock Interview</h3>
+                    <p class="text-sm text-slate-500 mt-2">Book a Session</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="comm-learning" class="view-section hidden fade-in">
+            <h2 class="text-2xl font-bold mb-6 text-slate-800">📹 Learning Resources</h2>
+            <div class="max-w-3xl space-y-4">
+                <div class="flex items-center gap-4 p-4 bg-white rounded-xl shadow-sm border border-slate-200">
+                    <i class="ph-fill ph-youtube-logo text-red-600 text-4xl"></i>
+                    <div>
+                        <p class="font-bold text-lg text-slate-800">Master English Fluency in 30 Days</p>
+                        <p class="text-sm text-slate-500">Video Guide • 15 Mins</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4 p-4 bg-white rounded-xl shadow-sm border border-slate-200">
+                    <i class="ph-fill ph-youtube-logo text-red-600 text-4xl"></i>
+                    <div>
+                        <p class="font-bold text-lg text-slate-800">Top 10 Interview Questions & Answers</p>
+                        <p class="text-sm text-slate-500">Video Guide • 25 Mins</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="comm-ai" class="view-section hidden fade-in">
+            <h2 class="text-2xl font-bold mb-6 text-slate-800 flex items-center gap-2"><i class="ph-bold ph-robot text-orange-500"></i> Communication AI</h2>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-orange-500 max-w-2xl">
+                <p class="text-sm text-slate-500 mb-4">Type a sentence to check grammar and tone.</p>
+                <textarea id="comm-input" class="w-full p-4 border rounded-lg text-sm bg-slate-50 focus:ring-orange-500 focus:border-orange-500" rows="4" placeholder="e.g. I is a good developer looking for jobs..."></textarea>
+                <button onclick="analyzeComm()" class="mt-4 bg-orange-600 text-white px-6 py-2 rounded-lg text-sm font-bold hover:bg-orange-700 transition">Analyze Text</button>
+                <div id="comm-result" class="hidden mt-6 p-4 bg-green-50 rounded-lg border border-green-200">
+                    <p class="text-xs font-bold text-green-700 uppercase">AI Suggestion:</p>
+                    <p class="text-sm text-slate-800 mt-1">"I <b>am</b> a skilled developer <b>seeking</b> job <b>opportunities</b>."</p>
+                    <p class="text-xs text-slate-500 mt-2">Score: 8/10 (Professional)</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="comm-mock" class="view-section hidden fade-in">
+            <h2 class="text-2xl font-bold mb-6 text-slate-800">📅 Book Mock Interview</h2>
+            <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-200 max-w-xl">
+                <form onsubmit="bookSlot(event, 'Communication')" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700">Select Date</label>
+                        <input type="date" required class="mt-1 block w-full border border-slate-300 rounded-md p-2">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700">Time Slot</label>
+                        <select class="mt-1 block w-full border border-slate-300 rounded-md p-2">
+                            <option>10:00 AM - 10:30 AM</option>
+                            <option>02:00 PM - 02:30 PM</option>
+                            <option>06:00 PM - 06:30 PM</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700">Focus Area</label>
+                        <select class="mt-1 block w-full border border-slate-300 rounded-md p-2">
+                            <option>General HR</option>
+                            <option>Technical Explanation</option>
+                            <option>Project Discussion</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="w-full bg-slate-900 text-white py-3 rounded-lg font-bold hover:bg-slate-800 transition">Confirm Booking</button>
+                </form>
+            </div>
+        </div>
+
+
+        <!-- ================== 2. TECHNICAL SECTION ================== -->
+        <div id="skill-tech-menu" class="view-section hidden fade-in">
+            <h2 class="text-2xl font-bold mb-6 text-slate-800 flex items-center gap-2">
+                <i class="ph-fill ph-code text-blue-600"></i> Technical Mastery
+            </h2>
+             <div class="grid md:grid-cols-2 gap-6 max-w-4xl">
+                <div onclick="navigateTo('tech-learning')" class="bg-white p-8 rounded-xl shadow-sm hover:shadow-lg cursor-pointer border border-slate-100 text-center hover:border-blue-400 transition">
+                    <i class="ph-duotone ph-books text-5xl text-blue-500 mb-4"></i>
+                    <h3 class="font-bold text-lg text-slate-800">Learning Paths</h3>
+                    <p class="text-sm text-slate-500 mt-2">Java, Python, Web Dev</p>
+                </div>
+                <div onclick="navigateTo('tech-test')" class="bg-white p-8 rounded-xl shadow-sm hover:shadow-lg cursor-pointer border border-slate-100 text-center hover:border-blue-400 transition">
+                    <i class="ph-duotone ph-terminal-window text-5xl text-blue-500 mb-4"></i>
+                    <h3 class="font-bold text-lg text-slate-800">Coding Tests</h3>
+                    <p class="text-sm text-slate-500 mt-2">Take Assessment</p>
+                </div>
+             </div>
+        </div>
+
+        <div id="tech-learning" class="view-section hidden fade-in">
+             <h2 class="text-2xl font-bold mb-6 text-slate-800">📚 Learning Paths</h2>
+             <div class="space-y-4 max-w-2xl">
+                <div class="flex items-center justify-between p-4 border border-slate-200 rounded-xl hover:border-blue-400 cursor-pointer bg-white transition shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <i class="ph-fill ph-coffee text-orange-600 text-2xl"></i>
+                        <div><p class="font-bold text-slate-800">Java Programming</p><span class="text-xs text-slate-500">Beginner to Advanced</span></div>
+                    </div>
+                    <i class="ph-bold ph-caret-right text-slate-400"></i>
+                </div>
+                <div class="flex items-center justify-between p-4 border border-slate-200 rounded-xl hover:border-blue-400 cursor-pointer bg-white transition shadow-sm">
+                    <div class="flex items-center gap-3">
+                        <i class="ph-fill ph-snake text-yellow-600 text-2xl"></i>
+                        <div><p class="font-bold text-slate-800">Python for Data</p><span class="text-xs text-slate-500">Data Structures & AI</span></div>
+                    </div>
+                    <i class="ph-bold ph-caret-right text-slate-400"></i>
+                </div>
+             </div>
+        </div>
+
+        <div id="tech-test" class="view-section hidden fade-in">
+            <h2 class="text-2xl font-bold mb-6 text-slate-800">⚡ Skill Assessment Tests</h2>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-blue-600 max-w-2xl">
+                <p class="text-sm text-slate-500 mb-6">Take timed tests to verify your knowledge.</p>
+                <div class="space-y-4">
+                    <div class="flex justify-between items-center bg-slate-50 p-4 rounded-lg">
+                        <span class="font-bold text-slate-800">Java Basics (Lvl 1)</span>
+                        <button onclick="startTest('Java')" class="bg-blue-600 text-white px-4 py-1.5 rounded text-sm font-medium hover:bg-blue-700">Start Test</button>
+                    </div>
+                    <div class="flex justify-between items-center bg-slate-50 p-4 rounded-lg">
+                        <span class="font-bold text-slate-800">Python Logic (Lvl 1)</span>
+                        <button onclick="startTest('Python')" class="bg-blue-600 text-white px-4 py-1.5 rounded text-sm font-medium hover:bg-blue-700">Start Test</button>
+                    </div>
+                    <div class="flex justify-between items-center bg-slate-50 p-4 rounded-lg">
+                        <span class="font-bold text-slate-800">DSA - Arrays (Lvl 2)</span>
+                        <button onclick="startTest('DSA')" class="bg-blue-600 text-white px-4 py-1.5 rounded text-sm font-medium hover:bg-blue-700">Start Test</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ================== 3. SOFT SKILLS SECTION ================== -->
+        <div id="skill-soft-menu" class="view-section hidden fade-in">
+            <h2 class="text-2xl font-bold mb-6 text-slate-800 flex items-center gap-2">
+                <i class="ph-fill ph-handshake text-pink-500"></i> Corporate Readiness
+            </h2>
+            <div class="grid md:grid-cols-3 gap-6">
+                <div onclick="navigateTo('soft-learning')" class="bg-white p-8 rounded-xl shadow-sm hover:shadow-lg cursor-pointer border border-slate-100 text-center hover:border-pink-400 transition">
+                    <i class="ph-duotone ph-book-open-text text-5xl text-pink-500 mb-4"></i>
+                    <h3 class="font-bold text-lg text-slate-800">Etiquette Guide</h3>
+                    <p class="text-sm text-slate-500 mt-2">Workplace Behavior</p>
+                </div>
+                <div onclick="navigateTo('soft-ai')" class="bg-white p-8 rounded-xl shadow-sm hover:shadow-lg cursor-pointer border border-slate-100 text-center hover:border-pink-400 transition">
+                    <i class="ph-duotone ph-brain text-5xl text-pink-500 mb-4"></i>
+                    <h3 class="font-bold text-lg text-slate-800">Tone Analyzer</h3>
+                    <p class="text-sm text-slate-500 mt-2">Professionalism Check</p>
+                </div>
+                <div onclick="navigateTo('soft-mock')" class="bg-white p-8 rounded-xl shadow-sm hover:shadow-lg cursor-pointer border border-slate-100 text-center hover:border-pink-400 transition">
+                    <i class="ph-duotone ph-user-focus text-5xl text-pink-500 mb-4"></i>
+                    <h3 class="font-bold text-lg text-slate-800">HR Mock Round</h3>
+                    <p class="text-sm text-slate-500 mt-2">Practice Questions</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="soft-learning" class="view-section hidden fade-in">
+            <h2 class="text-2xl font-bold mb-6 text-slate-800">👔 Workplace Etiquette</h2>
+            <div class="grid grid-cols-2 gap-6 max-w-3xl">
+                <div class="bg-pink-50 p-6 rounded-xl text-center cursor-pointer hover:bg-pink-100 transition">
+                    <i class="ph-duotone ph-users-three text-4xl text-pink-600 mb-3"></i>
+                    <p class="font-bold text-slate-800">Team Work</p>
+                    <p class="text-xs text-slate-600 mt-1">Collaboration Tips</p>
+                </div>
+                <div class="bg-pink-50 p-6 rounded-xl text-center cursor-pointer hover:bg-pink-100 transition">
+                    <i class="ph-duotone ph-presentation-chart text-4xl text-pink-600 mb-3"></i>
+                    <p class="font-bold text-slate-800">Meetings</p>
+                    <p class="text-xs text-slate-600 mt-1">Speaking & Listening</p>
+                </div>
+                <div class="bg-pink-50 p-6 rounded-xl text-center cursor-pointer hover:bg-pink-100 transition">
+                    <i class="ph-duotone ph-user-focus text-4xl text-pink-600 mb-3"></i>
+                    <p class="font-bold text-slate-800">Body Language</p>
+                    <p class="text-xs text-slate-600 mt-1">Posture & Gestures</p>
+                </div>
+                <div class="bg-pink-50 p-6 rounded-xl text-center cursor-pointer hover:bg-pink-100 transition">
+                    <i class="ph-duotone ph-envelope-simple text-4xl text-pink-600 mb-3"></i>
+                    <p class="font-bold text-slate-800">Email Writing</p>
+                    <p class="text-xs text-slate-600 mt-1">Professional Formats</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="soft-ai" class="view-section hidden fade-in">
+            <h2 class="text-2xl font-bold mb-6 text-slate-800">🧠 Behavioral AI</h2>
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 border-l-4 border-l-pink-500 max-w-2xl">
+                <p class="text-sm text-slate-500 mb-4">Analyze your professional response tone.</p>
+                <textarea id="soft-input" class="w-full p-4 border rounded-lg text-sm bg-slate-50 focus:ring-pink-500 focus:border-pink-500" rows="4" placeholder="e.g. I disagree with you, this is wrong..."></textarea>
+                <button onclick="analyzeSoft()" class="mt-4 bg-pink-600 text-white px-6 py-2 rounded-lg text-sm font-bold hover:bg-pink-700 transition">Check Tone</button>
+                
+                <div id="soft-result" class="hidden mt-6 p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                    <p class="text-xs font-bold text-yellow-700 uppercase">Improvement Needed:</p>
+                    <p class="text-sm text-slate-800 mt-1">"I have a different perspective on this. Can we explore other options?"</p>
+                    <p class="text-xs text-slate-500 mt-2">Tone: Constructive & Polite</p>
+                </div>
+            </div>
+        </div>
+
+        <div id="soft-mock" class="view-section hidden fade-in">
+             <h2 class="text-2xl font-bold mb-6 text-slate-800">🧑‍💼 Mock HR Round</h2>
+             <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-200 max-w-xl text-center">
+                <p class="text-sm text-slate-500 mb-6">Practice typical HR questions: "Tell me about yourself", "Weaknesses", etc.</p>
+                <div class="bg-slate-50 p-8 rounded-lg mb-6 flex flex-col items-center justify-center border border-dashed border-slate-300">
+                    <i class="ph-duotone ph-webcam text-5xl text-slate-400 mb-3"></i>
+                    <p class="text-xs text-slate-500 font-medium">Camera permission required for AI analysis</p>
+                </div>
+                <button onclick="bookSlot(event, 'HR Round')" class="w-full bg-slate-900 text-white py-3 rounded-lg font-bold hover:bg-slate-800 transition">Schedule HR Interview</button>
+            </div>
+        </div>
+
+        <!-- ================== COURSES MODULE ================== -->
+        <div id="courses-home" class="view-section hidden fade-in">
+            <h2 class="text-3xl font-bold mb-8 text-slate-800 border-l-8 border-purple-600 pl-4">Learning Center</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div onclick="navigateTo('courses-list')" class="bg-white rounded-2xl p-8 shadow-md hover:shadow-xl transition-all cursor-pointer border border-slate-100 group relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <i class="ph-fill ph-book-open text-9xl text-blue-600"></i>
+                    </div>
+                    <div class="relative z-10">
+                        <div class="w-14 h-14 bg-blue-100 text-blue-600 rounded-xl flex items-center justify-center mb-6 text-2xl">
+                            <i class="ph-fill ph-book-open"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold text-slate-900 mb-3">Courses</h3>
+                        <p class="text-slate-600 mb-4">Explore job-oriented courses in Web Dev, AI, Data Science, and more.</p>
+                        <span class="text-blue-600 font-medium flex items-center">Explore <i class="ph-bold ph-caret-right ml-1"></i></span>
+                    </div>
+                </div>
+
+                <div onclick="navigateTo('roadmaps-home')" class="bg-white rounded-2xl p-8 shadow-md hover:shadow-xl transition-all cursor-pointer border border-slate-100 group relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <i class="ph-fill ph-map-trifold text-9xl text-purple-600"></i>
+                    </div>
+                    <div class="relative z-10">
+                        <div class="w-14 h-14 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center mb-6 text-2xl">
+                            <i class="ph-fill ph-map-trifold"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold text-slate-900 mb-3">Roadmaps</h3>
+                        <p class="text-slate-600 mb-4">Step-by-step guides with time-based plans to land your dream role.</p>
+                        <span class="text-purple-600 font-medium flex items-center">View Roadmaps <i class="ph-bold ph-caret-right ml-1"></i></span>
+                    </div>
+                </div>
+
+                <div onclick="navigateTo('placement-home')" class="bg-white rounded-2xl p-8 shadow-md hover:shadow-xl transition-all cursor-pointer border border-slate-100 group relative overflow-hidden">
+                    <div class="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
+                        <i class="ph-fill ph-briefcase text-9xl text-green-600"></i>
+                    </div>
+                    <div class="relative z-10">
+                        <div class="w-14 h-14 bg-green-100 text-green-600 rounded-xl flex items-center justify-center mb-6 text-2xl">
+                            <i class="ph-fill ph-briefcase"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold text-slate-900 mb-3">Placement Basics</h3>
+                        <p class="text-slate-600 mb-4">Master Aptitude, English, and Coding basics for interviews.</p>
+                        <span class="text-green-600 font-medium flex items-center">Start Prep <i class="ph-bold ph-caret-right ml-1"></i></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="courses-list" class="view-section hidden fade-in">
+            <h2 class="text-2xl font-bold mb-6 text-slate-800">Available Courses</h2>
+            <div id="courses-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        </div>
+
+        <div id="courses-detail-view" class="view-section hidden fade-in">
+             <div id="course-detail-content"></div>
+        </div>
+
+        <!-- ================== ROADMAPS (UPDATED) ================== -->
+        <div id="roadmaps-home" class="view-section hidden fade-in">
+            <h2 class="text-3xl font-bold mb-2 text-slate-800">Career Roadmaps</h2>
+            <p class="text-slate-500 mb-8">Comprehensive guides powered by <a href="https://roadmap.sh" target="_blank" class="text-purple-600 font-bold hover:underline">roadmap.sh</a> logic.</p>
+            <div id="roadmaps-container" class="space-y-6"></div>
+        </div>
+
+        <div id="placement-home" class="view-section hidden fade-in">
+            <h2 class="text-2xl font-bold mb-6 text-slate-800">Placement Preparation</h2>
+            <div id="placement-container" class="grid grid-cols-1 md:grid-cols-2 gap-8"></div>
+        </div>
+
+        <!-- ================== HIGHER STUDIES ================== -->
+        <div id="higher-studies-home" class="view-section hidden fade-in">
+            <h2 class="text-3xl font-bold mb-8 text-slate-800 border-l-8 border-yellow-500 pl-4">Higher Studies Hub</h2>
+            <p class="mb-8 text-slate-600 text-lg">Explore education options after B.Tech to specialize and boost your career.</p>
+            
+            <div id="higher-studies-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+
+        <div id="higher-studies-detail" class="view-section hidden fade-in">
+            <div id="study-detail-content" class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+
+        <!-- ================== MENTORS ================== -->
+        <!-- Step 1: Mentor Domains -->
+        <div id="mentors-home" class="view-section hidden fade-in">
+            <h2 class="text-3xl font-bold mb-8 text-slate-800 border-l-8 border-indigo-600 pl-4">Find Your Mentor</h2>
+            <p class="mb-8 text-slate-600 text-lg">Connect with seniors and professionals to guide your career path.</p>
+            
+            <h3 class="text-xl font-bold mb-4 text-slate-700">Select a Career Domain</h3>
+            <div id="mentor-domains-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+
+        <!-- Step 2: Mentor List -->
+        <div id="mentor-list-view" class="view-section hidden fade-in">
+            <div class="flex items-center justify-between mb-6">
+                <h2 id="mentor-list-title" class="text-2xl font-bold text-slate-800">Available Mentors</h2>
+                <span class="text-sm bg-indigo-50 text-indigo-700 px-3 py-1 rounded-full font-medium">Verified Professionals</span>
+            </div>
+            <div id="mentor-list-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Injected via JS -->
+            </div>
+        </div>
+
+        <!-- Step 3: Booking -->
+        <div id="mentor-booking-view" class="view-section hidden fade-in">
+            <div class="max-w-2xl mx-auto bg-white p-8 rounded-2xl shadow-lg border border-slate-100">
+                <div class="text-center mb-8">
+                    <h2 class="text-2xl font-bold text-slate-800">Book a Session</h2>
+                    <p class="text-slate-500 mt-2" id="booking-mentor-name">with Mentor Name</p>
+                </div>
+                
+                <form onsubmit="confirmBooking(event)" class="space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Select Date</label>
+                            <input type="date" required class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Time Slot</label>
+                            <select class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-indigo-500 focus:border-indigo-500">
+                                <option>10:00 AM - 10:30 AM</option>
+                                <option>02:00 PM - 02:30 PM</option>
+                                <option>05:00 PM - 05:30 PM</option>
+                                <option>07:00 PM - 07:30 PM</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Mode of Communication</label>
+                        <div class="grid grid-cols-3 gap-4">
+                            <label class="border rounded-lg p-3 flex flex-col items-center cursor-pointer hover:bg-slate-50 peer-checked:border-indigo-600">
+                                <input type="radio" name="mode" class="mb-2 accent-indigo-600" checked>
+                                <i class="ph-fill ph-chat-circle-text text-2xl text-slate-400"></i>
+                                <span class="text-xs font-medium">Chat</span>
+                            </label>
+                            <label class="border rounded-lg p-3 flex flex-col items-center cursor-pointer hover:bg-slate-50">
+                                <input type="radio" name="mode" class="mb-2 accent-indigo-600">
+                                <i class="ph-fill ph-phone text-2xl text-slate-400"></i>
+                                <span class="text-xs font-medium">Audio</span>
+                            </label>
+                            <label class="border rounded-lg p-3 flex flex-col items-center cursor-pointer hover:bg-slate-50">
+                                <input type="radio" name="mode" class="mb-2 accent-indigo-600">
+                                <i class="ph-fill ph-video-camera text-2xl text-slate-400"></i>
+                                <span class="text-xs font-medium">Video</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Topics to Discuss</label>
+                        <textarea rows="3" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm" placeholder="Briefly describe what you want to ask..."></textarea>
+                    </div>
+
+                    <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-xl hover:bg-indigo-700 transition shadow-lg shadow-indigo-200">Confirm Booking</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- ================== OTHER PAGES ================== -->
+        <div id="application-form" class="view-section hidden fade-in">
+            <div class="max-w-2xl mx-auto bg-white p-8 rounded-2xl shadow-xl border-t-4 border-blue-600">
+                <h2 class="text-2xl font-bold mb-2">Application Form</h2>
+                <p id="apply-role-title" class="text-slate-500 mb-6">Applying for...</p>
+                <form onsubmit="handleApply(event)" class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div><label class="block text-sm font-medium">Full Name</label><input type="text" required class="mt-1 block w-full border border-slate-300 rounded-md p-2"></div>
+                        <div><label class="block text-sm font-medium">Phone</label><input type="tel" required class="mt-1 block w-full border border-slate-300 rounded-md p-2"></div>
+                    </div>
+                    <div><label class="block text-sm font-medium">Email</label><input type="email" required class="mt-1 block w-full border border-slate-300 rounded-md p-2"></div>
+                    <div><label class="block text-sm font-medium">CGPA</label><input type="number" step="0.1" id="applicant-cgpa" required class="mt-1 block w-full border border-slate-300 rounded-md p-2"></div>
+                    <div class="pt-4"><button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition">Submit</button></div>
+                </form>
+            </div>
+        </div>
+
+        <!-- ================== UPDATED JOB PREDICTOR (COMPLEX VERSION) ================== -->
+        <div id="prediction" class="view-section hidden fade-in max-w-4xl mx-auto">
+            <div class="bg-white p-8 rounded-2xl shadow-xl border border-slate-100">
+                <header class="mb-8 border-b border-slate-100 pb-4">
+                    <h2 class="text-3xl font-bold text-slate-800 flex items-center gap-3">
+                        <i class="ph-fill ph-crystal-ball text-blue-600"></i> Job Predictor
+                    </h2>
+                    <p class="text-slate-500 mt-2">Analyze your skills and resume to find your perfect job match.</p>
+                </header>
+
+                <form id="job-form" onsubmit="handlePrediction(event)">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                        <!-- 1. Personal -->
+                        <div>
+                            <h3 class="font-bold text-lg text-slate-700 mb-4 flex items-center gap-2"><i class="ph-bold ph-user text-blue-500"></i> Personal Details</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-600 mb-1">Full Name</label>
+                                    <input type="text" required class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-blue-500 focus:border-blue-500" placeholder="John Doe">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-600 mb-1">Degree & Spec</label>
+                                    <input type="text" required class="w-full border border-slate-300 rounded-lg p-2.5 focus:ring-blue-500 focus:border-blue-500" placeholder="B.Tech CSE">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-600 mb-1">Target Role</label>
+                                    <select id="target-role" class="w-full border border-slate-300 rounded-lg p-2.5 bg-white">
+                                        <option value="sde">Software Developer (SDE)</option>
+                                        <option value="web">Full Stack Developer</option>
+                                        <option value="data">Data Scientist/Analyst</option>
+                                        <option value="devops">DevOps Engineer</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 2. Skills & Exp -->
+                        <div>
+                            <h3 class="font-bold text-lg text-slate-700 mb-4 flex items-center gap-2"><i class="ph-bold ph-code text-blue-500"></i> Skills & Experience</h3>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-600 mb-1">Tech Skills (Comma separated)</label>
+                                    <textarea id="skills-input" rows="2" class="w-full border border-slate-300 rounded-lg p-2.5" placeholder="Java, Python, React, SQL..."></textarea>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-600 mb-1">Internships</label>
+                                        <select id="internships" class="w-full border border-slate-300 rounded-lg p-2.5 bg-white">
+                                            <option value="0">None</option>
+                                            <option value="1">1</option>
+                                            <option value="2">2+</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-slate-600 mb-1">Comm. Level</label>
+                                        <select id="communication" class="w-full border border-slate-300 rounded-lg p-2.5 bg-white">
+                                            <option value="avg">Average</option>
+                                            <option value="good">Good</option>
+                                            <option value="exc">Excellent</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 3. Resume -->
+                    <div class="mb-8">
+                         <h3 class="font-bold text-lg text-slate-700 mb-4 flex items-center gap-2"><i class="ph-bold ph-file-pdf text-blue-500"></i> Resume Upload</h3>
+                         <div class="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:bg-slate-50 transition cursor-pointer relative">
+                            <input type="file" id="resume-upload" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">
+                            <i class="ph-duotone ph-cloud-arrow-up text-4xl text-slate-400 mb-2"></i>
+                            <p class="text-slate-600 font-medium">Click to upload Resume (PDF)</p>
+                            <p class="text-xs text-slate-400 mt-1">AI will scan for keywords</p>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full bg-blue-600 text-white py-4 rounded-xl font-bold hover:bg-blue-700 transition shadow-lg hover:shadow-blue-200 flex items-center justify-center gap-2">
+                        <i class="ph-bold ph-lightning"></i> Analyze Profile & Predict
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- View 2: Loading (Predictor) -->
+        <div id="prediction-loading" class="view-section hidden fade-in flex flex-col items-center justify-center py-20">
+            <div class="w-20 h-20 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin mb-6"></div>
+            <h2 class="text-2xl font-bold text-slate-800 animate-pulse">Analyzing Profile...</h2>
+            <p class="text-slate-500 mt-2">Matching skills with 500+ job descriptions.</p>
+        </div>
+
+        <!-- View 3: Result (Predictor) -->
+        <div id="prediction-result" class="view-section hidden fade-in max-w-5xl mx-auto">
+            <button onclick="navigateTo('prediction')" class="mb-6 flex items-center text-slate-500 hover:tex
